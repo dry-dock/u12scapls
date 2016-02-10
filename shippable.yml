@@ -1,8 +1,28 @@
 language: python
 
 python:
-  - 2.7
+    - 2.7
 
-install: true
+build:
+  pre_ci:
+    # Always pull the latest base image to avoid any cached images on the host
+    - docker pull drydock/u12javpls:prod
+    - docker build --rm -t drydock/u12scapls:tip .
 
-script: true
+  pre_ci_boot:
+    image_name: drydock/u12scapls
+    image_tag: tip
+    pull: false
+
+  ci:
+    # We can add sanity checks to ensure the image was built successfully here
+    - sbt sbt-version
+    - java -version
+
+  on_success:
+    - if [ "$IS_PULL_REQUEST" != true ]; then docker push drydock/u12scapls:tip; fi
+
+integrations:
+  hub:
+    - integrationName: "dockerhub"
+      type: "docker"
